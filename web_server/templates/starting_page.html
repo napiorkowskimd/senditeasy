@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>starting page</title>
+    <link href="simple.css" rel="stylesheet" type="ext/css">
+</head>
+<body class="centered-wrapped">
+    <p>app prototype</p>
+    <div>
+        <form action = "{{url_for('generate_new_qr')}}" method="GET">
+            <input type="submit" name="qrcode" value="generate"/>
+        </form>
+    </div>
+    <img src="{{ url_for('send_qr_image', filename=filename) }}"/>
+</body>
+</html>
