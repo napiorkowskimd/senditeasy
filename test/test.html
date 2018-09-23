@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>test</title>
+        <script src="../resources/js/log.js" charset="utf-8" type="module"></script>
+        <script src="../resources/js/peer_connection.js" charset="utf-8" type="module"></script>
+        <script src="mock_server.js" charset="utf-8" type="module"></script>
+        <script src="../resources/js/webrtc_connection_client.js" charset="utf-8" type="module"></script>
+    </head>
+    <body>
+        <script type="module">
+            import {MockServer} from './mock_server.js';
+            import {WebRTCConnectionClient} from '../resources/js/webrtc_connection_client.js';
+            var server = new MockServer();
+            var [first, second] = server.createTwoConnectionEnds();
+
+            var client_a = new WebRTCConnectionClient(first);
+            var client_b = new WebRTCConnectionClient(second);
+            client_a.initializeWebRTCConnection();
+        </script>
+    </body>
+</html>
