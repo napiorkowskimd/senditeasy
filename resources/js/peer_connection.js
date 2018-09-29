@@ -1,6 +1,6 @@
 'use strict';
 
-import {LOG} from './log.js';
+import {LOG} from './utils/log.js';
 
 export class PeerConnection {
     constructor() {

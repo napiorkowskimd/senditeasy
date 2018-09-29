@@ -1,4 +1,5 @@
-import {PeerConnection} from '../resources/js/peer_connection.js'
+import {PeerConnection} from '../resources/js/peer_connection.js';
+import {LOG} from '../resources/js/utils/log.js';
 
 export class MockServerPeerConnection extends PeerConnection {
     constructor(server, other) {
@@ -15,7 +16,7 @@ export class MockServerPeerConnection extends PeerConnection {
         if(this.callbacks[type]) {
             this.callbacks[type](content)
         }else {
-            LOG.WARNING("Message " + type + "ignored");
+            LOG.WARNING("Message " + type + " ignored");
         }
     }
 }
@@ -39,7 +40,7 @@ export class MockServer {
             LOG.ERROR("Connection end doesn't exist");
             return;
         }
-
+        LOG.INFO("Sending message: " + type)
         this.connections[rec].getMessage(type, content);
     }
 }
