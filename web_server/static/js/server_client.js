@@ -27,12 +27,13 @@ export class ServerPeerConnection extends PeerConnection {
 }
 
 export class ServerClient {
-    constructor() {
-        this.socket = io();
+    constructor(socket) {
+        this.socket = socket
         this.socket.on(Messages.PEER_CONNECTION, this.onPeerConnection.bind(this));
         this.socket.on(Messages.PEER_MSG, this.onPeerMsg.bind(this));
         this.resolves = {};
         this.connections = {};
+        this.onconnected = (pc) => {};
     }
 
     createPeerConnection(other_id) {
@@ -45,14 +46,19 @@ export class ServerClient {
     }
 
     onPeerConnection(info) {
-        var other_id = info['connection_id'];
+        var other_id = info['other_id'];
         var pc = new ServerPeerConnection(this, other_id);
         this.connections[other_id] = pc;
-        this.resolves[other_id](pc);
+        if(this.resolves[other_id]) {
+            this.resolves[other_id](pc);
+        } else {
+            this.onconnected(pc);
+        }
     }
 
+
     onPeerMsg(info) {
-        var other_id = info['connection_id'];
+        var other_id = info['other_id'];
         var msg = info['msg'];
         var content = info['content'];
         this.connections[other_id].getMessage(msg, content);

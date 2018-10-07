@@ -1,83 +1,116 @@
-from flask import Flask, render_template, session, request, send_from_directory, redirect, url_for
+from flask import Flask, render_template, session, request, abort, redirect, send_from_directory
+from flask_socketio import SocketIO, send, emit
 import pyqrcode
-import random
-import string
+from uuid import uuid4
 import os
 
 
-class WebServer:
+class Client(object):
+    """docstring for Client."""
+    def __init__(self, qr_id, session_id):
+        super(Client, self).__init__()
+        self.qr_id = qr_id
+        self.session_id = session_id
+        self.other = None
+
+    def __str__(self):
+        return "Client({}, {}, {})".format(self.qr_id, self.session_id, self.other)
+
+class ClientFactory(object):
+    def __init__(self):
+        self.clients = dict()
+        self.pairs = dict()
+
+    def create(self):
+        print("creating new client")
+        id = uuid4().hex
+        client = Client(id, None)
+        self.clients[id] = client;
+        return client
+
+    def get(self, client_id=None):
+        if client_id == None:
+            if 'id' not in session:
+                client = self.create()
+                session['id'] = client.qr_id
+                return client
+            client_id = session['id']
+        return self.clients.get(client_id, None)
+
+
+def main(port):
     app = Flask(__name__)
     app.secret_key = os.urandom(24)
-    qr_code_length = 20
+    clients = ClientFactory()
+    socketio = SocketIO(app)
+    socketio.init_app(app)
 
-    def __init__(self, app, port):
-        app.run(debug=True, port=port)
+    hostname = "192.168.0.104"
 
-    @staticmethod
-    @app.route("/generated_qr", methods=['GET'])
-    def starting_page(debug=True):
-        if 'sess_id' not in session:
-            WebServer.create_new_sess()
-            if 'qr_code' not in session:
-                WebServer.add_qr_to_sess()
-        return render_template('starting_page.html', filename='{}_qr.png'.format(session['qr_code']))
+    @app.route("/", methods=['GET'])
+    def receiver():
+        client = clients.get()
+        return render_template('receiver.html', qr_id=client.qr_id)
 
-    @staticmethod
-    @app.route("/generate_new_qr", methods=['GET'])
-    def generate_new_qr():
-        if request.method == 'GET':
-            if 'sess_id' not in session:
-                WebServer.create_new_sess()
-                WebServer.add_qr_to_sess()
-            else:
-                WebServer.add_qr_to_sess()
-        return redirect(url_for('starting_page'))
+    @app.route("/images/qr_code.png")
+    def qr_image():
+        client = clients.get()
+        workdir = './workdir/{}'.format(client.qr_id)
+        if os.path.exists(workdir):
+            return send_from_directory(workdir, 'qr.png')
+        os.mkdir(workdir)
+        qr = pyqrcode.create('{}:{}/client/{}'.format(hostname, str(port), client.qr_id))
+        qr.png(workdir + '/qr.png', scale=10)
+        return send_from_directory(workdir, 'qr.png')
 
-    @staticmethod
-    def create_new_sess(debug=True):
-        session['sess_id'] = WebServer.random_string_gen(15)
-        if debug is True:
-            print 'new session ID: {}'.format(session['sess_id'])
+    @app.route("/client/<id>", methods=['GET'])
+    def sender(id):
+        rec_client = clients.get(id)
+        if rec_client == None:
+            abort(404)
+        this = clients.get()
+        if this == rec_client:
+            return redirect('/')
+        this.other = rec_client.qr_id
+        rec_client.other = this.qr_id
+        print("this:", this)
+        print("receiver:", rec_client)
+        return render_template('sender.html', other=id)
 
-            try:
-                WebServer.create_work_dir_sess()
-            except OSError:
-                print 'Could not create a folder for session: {}'.format(session['sess_id'])
-                return
+    @socketio.on('connect')
+    def handleConnected():
+        client = clients.get()
+        client.session_id = request.sid
+        print("socket connected:", client)
 
-    @staticmethod
-    def add_qr_to_sess(debug=True):
-        session['qr_code'] = WebServer.random_string_gen(20)
-        if debug is True:
-            print 'session ID: {}\nnew QR code: {}'.format(session['sess_id'], session['qr_code'])
-
-        try:
-            WebServer.qr_code_to_image()
-        except OSError:
-            print 'Could not save QR - image:{}'.format(session['qr_code'])
+    @socketio.on('create connection')
+    def handleCreateConnection(data):
+        print("create connection:", data)
+        other_id = data['other_id']
+        other = clients.get(other_id)
+        if other == None:
+            print("No such client:", other_id)
             return
+        this = clients.get()
+        this.other = other;
+        other.other = this;
+        emit('peer connection', {'other_id': this.qr_id}, room=other.session_id)
+        emit('peer connection', {'other_id': other.qr_id}, room=this.session_id)
 
-    @staticmethod
-    @app.route('/image/<filename>')
-    def send_qr_image(filename):
-        return send_from_directory('workdir/{}/'.format(session['sess_id']), filename)
+    @socketio.on('peer msg')
+    def handlePeerMsg(data):
+        sender = clients.get()
+        receiver = sender.other
+        if receiver == None:
+            print("message to non-existing client")
+            return
+        emit('peer msg',
+            {'msg': data['msg'],
+             'other_id': sender.qr_id,
+             'content': data['content']}, room=receiver.session_id)
 
-    @staticmethod
-    def random_string_gen(length_of_string=20):
-        chars = string.ascii_uppercase + string.digits
-        rand_string = ''.join(random.choice(chars) for _ in range(length_of_string))
-        return rand_string
-
-    @staticmethod
-    def create_work_dir_sess():
-        os.mkdir('workdir/{}'.format(session['sess_id']))
-
-    @staticmethod
-    def qr_code_to_image():
-        image_path = 'workdir/{}/{}_qr.png'.format(session['sess_id'], session['qr_code'])
-        qr = pyqrcode.create(session['qr_code'])
-        qr.png(image_path, scale=10)
+    return app.run(host='0.0.0.0', port=port, debug=True)
 
 
 if __name__ == "__main__":
-    app = WebServer(WebServer.app, 5001)
+    main(5001)
