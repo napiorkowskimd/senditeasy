@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>test</title>
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.3.2/adapter.min.js" charset="utf-8"></script> -->
+        <script src="../resources/js/utils/log.js" charset="utf-8" type="module"></script>
+        <script src="../resources/js/peer_connection.js" charset="utf-8" type="module"></script>
+        <script src="mock_server.js" charset="utf-8" type="module"></script>
+        <script src="../resources/js/webrtc_peer_connection.js" charset="utf-8" type="module"></script>
+    </head>
+    <body>
+        <script type="module">
+            import {MockServer} from './mock_server.js';
+            import {WebRTCPeerConnection} from '../resources/js/webrtc_peer_connection.js';
+            var server = new MockServer();
+            var [first, second] = server.createTwoConnectionEnds();
+
+            window.client_a = new WebRTCPeerConnection(first);
+            window.client_a.onConnected = () => {
+                console.log("client_a connected");
+            }
+            window.client_b = new WebRTCPeerConnection(second);
+            window.client_b.onConnected = () => {
+                console.log("client_b connected");
+            }
+            client_a.initialize();
+        </script>
+    </body>
+</html>
