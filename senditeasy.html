@@ -1,42 +1,12 @@
-<style scoped>
-  .button{
-    background-color:  #3498DB;
-    border: none;
-    border-radius: 8px;
-  	color: white;
-    cursor: pointer;
-    display: inline-block;
-    font-size: 32;
-    margin: 4px 2px;
-    padding: 16px 32px;
-    text-align: center;
-    text-decoration: none;
-    transition-duration: 0.4s;
-    text-shadow: 10 2 2 rgba(0, 0, 0, 0.6);
-  }
-  
-  .button:hover {
-    background-color: white;
-    color: rgb(66, 184, 221);    
-  }
-  
-  .button1{
-  	background-color: green;
-    color: button-download;
-    font-size: 16;
-  }
-  
-  .button1:hover{
-    background-color: button-download;
-  	color: green;
-  }
-  	
+<head>
+  <link rel="stylesheet" type="text/css" href="/senditeasy/web_server/static/css/mystyle.css">
+</head>
 
-</style>
-<body>
+<body >
   <button class="button pure-button" onclick="myFunction()">Create QR Code</button>
   <div id="myDIV" style="display:none">
-    <img src="https://www.pexels.com/photo/white-and-yellow-flower-with-green-stems-36764/" alt="" width="350" height="350" height="50" />
+    <img src="https://www.pexels.com/photo/white-and-yellow-flower-with-green-stems-36764/" alt=""
+         width="350" height="350"/>
     <button class="button button1">Download</button>
   </div>
 </body>
