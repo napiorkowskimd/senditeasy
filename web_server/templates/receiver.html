@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>receiver</title>
+        <script src="static/js/utils/log.js" charset="utf-8" type="module"></script>
+        <script src="static/js/server_client.js" charset="utf-8" type="module"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="/senditeasy/web_server/static/css/mystyle.css">
+    </head>
+    <body>
+      <button class="button pure-button" onclick="showHide()">Create QR Code</button>
+      <div id="myDIV" style="display:none">
+        <img alt="" width="350" height="350"/>
+        <button class="button button1">Download</button>
+      </div>
+    <script type='module'>
+      import {ServerClient} from './static/js/server_client.js';
+      import {WebRTCPeerConnection} from './static/js/webrtc_peer_connection.js';
+      var socket = io.connect();
+      socket.on('connect', function() {
+          var srv = new ServerClient(socket)
+          srv.onconnected = function(srvpc) {
+              console.log(srvpc);
+              var pc = new WebRTCPeerConnection(srvpc);
+              pc.onConnected = function() {
+                  console.log(pc);
+              }
+          }
+      })
+{{qr_id}}
+    </script>
+    <script>
+    function showHide() {
+        var x = document.getElementById("myDIV");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+    </script>
+<img src="images/qr_code.png" alt="">
+    </body>
+</html>
